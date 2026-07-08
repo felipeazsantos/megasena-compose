@@ -1,6 +1,7 @@
 package dev.felipeazsantos.megasenacompose
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -49,8 +50,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainApp() {
-    var result = remember { mutableStateOf("Resultado APARECE aqui") }
     val context = LocalContext.current
+    val prefs = context.getSharedPreferences("megasena", Context.MODE_PRIVATE)
+    var result = remember { mutableStateOf(prefs.getString(PREFS_KEY, "") ?: "") }
     val bet = remember { mutableStateOf("") }
 
     Surface(
@@ -87,8 +89,18 @@ fun MainApp() {
             }
 
             Button(onClick = {
-                val res = numbersGenerator(context, bet.value.toInt())
-                result.value = res
+                val numbersIsValid = validateTextField(bet.value)
+                if (!numbersIsValid) {
+                    Toast.makeText(
+                        context,
+                        "Quantidade de números inválida",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@Button
+                }
+
+                result.value = numbersGenerator( bet.value.toInt())
+                saveNumberSequence(prefs, result.value)
             }) {
                 Text("Gerar Números")
             }
@@ -96,33 +108,38 @@ fun MainApp() {
     }
 }
 
+fun saveNumberSequence(prefs: SharedPreferences, numberSequence: String) {
+   prefs.edit().apply {
+       putString(PREFS_KEY, numberSequence)
+       apply()
+   }
+
+}
+
+const val PREFS_KEY = "key_mega"
+fun validateTextField(text: String) : Boolean {
+    if (text.isEmpty()) return false
+
+    val qtd = text.toInt()
+    if (qtd !in 6..15) return false
+
+    return true
+}
+
 fun validateInput(input: String): String {
     return input.filter { it.isDigit() }
 }
 
-fun numbersGenerator(context: Context, qtd: Int): String {
-    var result = ""
+fun numbersGenerator(qtd: Int): String {
+    val numbers = mutableSetOf<Int>()
 
-    if (qtd >= 6 && qtd <= 15) {
-        val numbers = mutableSetOf<Int>()
-
-        while (true) {
-            val n = Random().nextInt(60) + 1
-            numbers.add(n)
-            if (numbers.size == qtd) break
-        }
-
-        result = numbers.joinToString(" - ")
-
-    } else {
-        Toast.makeText(
-            context,
-            "Quantidade de números inválida",
-            Toast.LENGTH_SHORT
-        ).show()
+    while (true) {
+        val n = Random().nextInt(60) + 1
+        numbers.add(n)
+        if (numbers.size == qtd) break
     }
 
-    return result
+    return numbers.joinToString(" - ")
 }
 
 
