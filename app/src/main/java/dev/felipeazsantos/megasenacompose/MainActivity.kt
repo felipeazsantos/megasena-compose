@@ -1,6 +1,8 @@
 package dev.felipeazsantos.megasenacompose
 
+import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,21 +11,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.felipeazsantos.megasenacompose.ui.theme.MegaSenaComposeTheme
+import java.util.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +49,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainApp() {
+    var result = remember { mutableStateOf("Resultado APARECE aqui") }
+    val context = LocalContext.current
+    val bet = remember { mutableStateOf("") }
+
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -60,18 +73,56 @@ fun MainApp() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 TextField(
-                    value = "",
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    value = bet.value,
                     label = {
-                    Text("Digite um número entre 6 e 15")
-                }, onValueChange = {})
-                Text(" Resultado APARECE aqui", style = TextStyle(fontWeight = FontWeight.Bold))
+                        Text("Digite um número entre 6 e 15")
+                    }, onValueChange = {
+                        bet.value = validateInput(it)
+                    })
+                Text(result.value, style = TextStyle(fontWeight = FontWeight.Bold))
             }
 
-            Button(onClick = {}) {
+            Button(onClick = {
+                val res = numbersGenerator(context, bet.value.toInt())
+                result.value = res
+            }) {
                 Text("Gerar Números")
             }
         }
     }
+}
+
+fun validateInput(input: String): String {
+    return input.filter { it.isDigit() }
+}
+
+fun numbersGenerator(context: Context, qtd: Int): String {
+    var result = ""
+
+    if (qtd >= 6 && qtd <= 15) {
+        val numbers = mutableSetOf<Int>()
+
+        while (true) {
+            val n = Random().nextInt(60) + 1
+            numbers.add(n)
+            if (numbers.size == qtd) break
+        }
+
+        result = numbers.joinToString(" - ")
+
+    } else {
+        Toast.makeText(
+            context,
+            "Quantidade de números inválida",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    return result
 }
 
 
